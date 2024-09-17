@@ -1,0 +1,73 @@
+Answer 1
+    Django signals are executed synchronously by default.
+    When you run this code, you will see that the signal handler is executed synchronously and the "Signal handler completed" message will be printed after the handler finishes running.
+
+        from django.db.models.signals import post_save
+        from django.dispatch import receiver
+        from django.db import models
+
+        class MyModel(models.Model):
+            name = models.CharField(max_length=100)
+
+        @receiver(post_save, sender=MyModel)
+        def my_handler(sender, instance, created, **kwargs):
+            print("Signal handler executed")
+            # Perform some time-consuming operation here
+            print("Signal handler completed")
+
+        # Create an instance of MyModel
+        obj = MyModel.objects.create(name='example')
+
+        print("Object created")
+
+
+Answer 2
+    Django signals run in the same thread as the caller by default.
+    When you run this code, you will see that the signal handler and the object creation message are printed in the same thread, demonstrating that Django signals run in the same thread as the caller by default.
+
+        import threading
+        from django.db.models.signals import post_save
+        from django.dispatch import receiver
+        from django.db import models
+
+        class MyModel(models.Model):
+            name = models.CharField(max_length=100)
+
+        @receiver(post_save, sender=MyModel)
+        def my_handler(sender, instance, created, **kwargs):
+            print(f"Signal handler executed in thread: {threading.current_thread().name}")
+
+        # Create an instance of MyModel
+        obj = MyModel.objects.create(name='example')
+
+        print(f"Object created in thread: {threading.current_thread().name}")
+
+
+Answer 3
+    By default, Django signals run in the same database transaction as the caller.
+    When you run this code, you will see that the signal handler modifies the instance within the same transaction as the object creation. The changes made by the signal handler will be visible outside the transaction, demonstrating that Django signals run in the same database transaction as the caller by default.
+
+        from django.db import transaction
+        from django.db.models.signals import post_save
+        from django.dispatch import receiver
+        from django.db import models
+
+        class MyModel(models.Model):
+            name = models.CharField(max_length=100)
+
+        @receiver(post_save, sender=MyModel)
+        def my_handler(sender, instance, created, **kwargs):
+            print("Signal handler executed")
+            instance.name = "Modified"  # Modify the instance
+
+        # Start a transaction
+        with transaction.atomic():
+            obj = MyModel.objects.create(name='example')
+            print("Object created")
+
+        # Fetch the object outside the transaction
+        obj_outside_transaction = MyModel.objects.get(id=obj.id)
+        print("Object outside transaction:", obj_outside_transaction.name)
+
+
+
